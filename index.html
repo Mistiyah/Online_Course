@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Course Management</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <h1>Online Course Management</h1>
+
+    <!-- Form untuk membuat atau mengedit kursus -->
+    <h2 id="formTitle">Create Course</h2>
+    <form id="createCourseForm">
+        <input type="hidden" name="course_id" id="course_id">
+        <input type="text" name="title" id="title" placeholder="Judul Course" required>
+        <textarea name="description" id="description" placeholder="Deskripsi Course" required></textarea>
+        <input type="time" name="duration" id="duration" required>
+        <button type="submit">Create Course</button>
+    </form>
+
+    <!-- Daftar kursus -->
+    <h2>Course List</h2>
+    <ul id="courseList"></ul>
+
+    <!-- Tombol untuk mengakses halaman materi -->
+    <h2>Manage Materials</h2>
+    <button id="material" onclick="window.location.href='create_material.html'">Create Materi</button>
+
+    <script>
+        // Fungsi untuk membuat atau mengedit kursus
+        document.getElementById('createCourseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let formData = new FormData(this);
+            let courseId = document.getElementById('course_id').value;
+            let actionUrl = courseId ? 'update_course.php' : 'create_course.php';
+
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData
+            }).then(response => response.text())
+            .then(data => {
+                alert(data);
+                resetForm();
+                loadCourses();
+            });
+        });
+
+        // Fungsi untuk memuat daftar kursus
+        function loadCourses() {
+            fetch('get_courses.php')
+                .then(response => response.json())
+                .then(data => {
+                    let courseList = document.getElementById('courseList');
+                    courseList.innerHTML = '';
+                    data.forEach(course => {
+                        let li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>${course.title} - ${course.description} - ${course.duration}</span>
+                            <button onclick="editCourse(${course.id}, '${course.title}', '${course.description}', '${course.duration}')">Edit</button>
+                            <button onclick="deleteCourse(${course.id})">Delete</button>
+                        `;
+                        courseList.appendChild(li);
+                    });
+                });
+        }
+
+        // Fungsi untuk mengedit kursus
+        function editCourse(id, title, description, duration) {
+            document.getElementById('course_id').value = id;
+            document.getElementById('title').value = title;
+            document.getElementById('description').value = description;
+            document.getElementById('duration').value = duration;
+            document.getElementById('formTitle').innerText = "Edit Course";
+            document.querySelector('button[type="submit"]').innerText = "Update Course";
+        }
+
+        // Fungsi untuk menghapus kursus
+        function deleteCourse(id) {
+            if (confirm('Are you sure you want to delete this course?')) {
+                fetch(`delete_course.php?id=${id}`, {
+                    method: 'GET'
+                }).then(response => response.text())
+                .then(data => {
+                    alert(data);
+                    loadCourses();
+                });
+            }
+        }
+
+        // Fungsi untuk mereset form
+        function resetForm() {
+            document.getElementById('course_id').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('duration').value = '';
+            document.getElementById('formTitle').innerText = "Create Course";
+            document.querySelector('button[type="submit"]').innerText = "Create Course";
+        }
+
+        // Muat daftar kursus saat halaman dimuat
+        window.onload = loadCourses;
+    </script>
+</body>
+</html>
